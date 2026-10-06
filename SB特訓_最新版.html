@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>SB特訓</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;background:#111;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;overflow:hidden}
+body{display:flex;justify-content:center}
+.app{width:min(100%,430px);height:100%;padding:18px 18px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column}
+h1{margin:0;text-align:center;font-size:26px;letter-spacing:3px}
+.sub{text-align:center;color:#aaa;margin:3px 0 12px}
+.stats{display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin-bottom:8px}
+.gaugeWrap{position:relative;flex:1;min-height:360px;display:flex;justify-content:center;align-items:center}
+.gauge{position:relative;width:150px;height:min(62vh,520px);border:3px solid #eee;border-radius:28px;background:linear-gradient(#f59e0b 0 18%,#171717 18% 77%,#38bdf8 77%);overflow:hidden;box-shadow:0 0 20px #000 inset}
+.target{position:absolute;left:5px;right:5px;top:58%;height:10%;border:3px solid #fff;background:rgba(255,255,255,.18);border-radius:8px}
+.pointer{position:absolute;left:10px;right:10px;height:8px;border-radius:99px;background:#fff;box-shadow:0 0 10px #fff;top:0;transform:translateY(-50%)}
+.centerMark{position:absolute;left:-28px;right:-28px;top:63%;height:2px;background:rgba(255,255,255,.55)}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{border:0;border-radius:14px;padding:15px 10px;font-size:17px;font-weight:800;background:#2b2b2b;color:#fff}
+button:active{transform:scale(.97)}
+#hit{grid-column:1/-1;padding:20px;background:#f97316;font-size:22px;box-shadow:0 5px 0 #9a3412}
+#start{background:#2563eb}
+select{width:100%;border:0;border-radius:14px;background:#2b2b2b;color:#fff;padding:15px;font-size:16px;font-weight:700}
+.result{text-align:center;height:34px;font-size:24px;font-weight:900;letter-spacing:2px;margin:7px 0}
+.good{color:#22c55e}.perfect{color:#fde047}.bad{color:#ef4444}
+.note{text-align:center;color:#888;font-size:11px;margin-top:7px}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>STRIKE BATTLE</h1>
+<div class="sub">SB 特訓</div>
+<div class="stats">
+<span>成功 <b id="ok">0</b></span><span>試行 <b id="tries">0</b></span><span>COMBO <b id="combo">0</b></span>
+</div>
+<div class="gaugeWrap">
+  <div class="gauge" id="gauge">
+    <div class="target"></div>
+    <div class="centerMark"></div>
+    <div class="pointer" id="pointer"></div>
+  </div>
+</div>
+<div class="result" id="result">STARTを押して開始</div>
+<div class="controls">
+<button id="start">START</button>
+<select id="speed"><option value="1">ゆっくり</option><option value="1.5" selected>通常</option><option value="2.2">速い</option><option value="3">鬼</option></select>
+<button id="hit">SB INPUT</button>
+</div>
+<div class="note">画面タップ / SB INPUT / スペースキーで入力</div>
+</div>
+<script>
+const p=document.querySelector('#pointer'), r=document.querySelector('#result');
+const okEl=document.querySelector('#ok'), trEl=document.querySelector('#tries'), coEl=document.querySelector('#combo');
+let running=false, raf=0, t=0, last=0, dir=1, speed=1.5, ok=0, tries=0, combo=0;
+function loop(ms){
+ if(!running)return;
+ if(!last)last=ms;
+ const dt=(ms-last)/1000; last=ms;
+ const g=document.querySelector('#gauge'), max=g.clientHeight;
+ const range=max*0.86;
+ t += dir*speed*dt;
+ if(t>=1){t=1;dir=-1}
+ if(t<=0){t=0;dir=1}
+ p.style.top=(7+t*86)+'%';
+ raf=requestAnimationFrame(loop);
+}
+function start(){
+ running=true; t=Math.random(); dir=Math.random()>.5?1:-1; last=0;
+ ok=tries=combo=0; okEl.textContent=0;trEl.textContent=0;coEl.textContent=0;
+ r.textContent='';r.className='result'; cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+}
+function hit(){
+ if(!running)return;
+ tries++;
+ const pos=t*86+7; // percent from top
+ const targetTop=58, targetBottom=68;
+ const center=63, d=Math.abs(pos-center);
+ let cls='bad',txt='MISS';
+ if(pos>=targetTop&&pos<=targetBottom){
+   if(d<=2){cls='perfect';txt='PERFECT';}
+   else {cls='good';txt='GOOD';}
+   ok++;combo++;
+ }else{combo=0}
+ okEl.textContent=ok;trEl.textContent=tries;coEl.textContent=combo;
+ r.textContent=txt;r.className='result '+cls;
+}
+document.querySelector('#start').onclick=start;
+document.querySelector('#hit').onclick=hit;
+document.querySelector('#speed').onchange=e=>speed=+e.target.value;
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();hit()}});
+document.body.addEventListener('touchstart',e=>{
+ if(e.target.tagName!=='BUTTON'&&e.target.tagName!=='SELECT'&&running) hit();
+},{passive:true});
+</script>
+</body>
+</html>
